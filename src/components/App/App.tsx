@@ -30,14 +30,14 @@ export default function App() {
     queryKey: ["movies", query, page],
     queryFn: () => getMovies(query, page),
     enabled: !!query.trim(),
-    keepPreviousData: true,
+    staleTime: 2000,
     placeholderData: movies.length
       ? { results: movies, total_pages: totalPages }
       : undefined,
   });
 
   useEffect(() => {
-    if (data) {
+    if (data?.results) {
       setMovies(data.results);
       setTotalPages(data.total_pages);
       if (data.results.length === 0) {
