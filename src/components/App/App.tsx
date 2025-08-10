@@ -19,8 +19,6 @@ interface MoviesResponse {
 export default function App() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
   const { data, isLoading, isError, isSuccess } = useQuery<
@@ -29,22 +27,15 @@ export default function App() {
   >({
     queryKey: ["movies", query, page],
     queryFn: () => getMovies(query, page),
-    enabled: !!query.trim(),
-    staleTime: 2000,
-    placeholderData: movies.length
-      ? { results: movies, total_pages: totalPages }
-      : undefined,
+    enabled: !!query,
+    placeholderData: (previousData) => previousData,
   });
 
   useEffect(() => {
-    if (data?.results) {
-      setMovies(data.results);
-      setTotalPages(data.total_pages);
-      if (data.results.length === 0) {
-        toast.error("No movies found for your request.");
-      }
+    if (isSuccess && data?.results?.length === 0) {
+      toast.error("No movies found for your request.");
     }
-  }, [data]);
+  }, [isSuccess, data]);
 
   const handleSearch = (searchQuery: string) => {
     if (!searchQuery.trim()) {
@@ -55,14 +46,16 @@ export default function App() {
     setPage(1);
   };
 
+  const totalPages = data?.total_pages || 0;
+
   return (
     <div className={css.app}>
       <SearchBar onSubmit={handleSearch} />
 
       {isError && <ErrorMessage />}
       {isLoading && <Loader />}
-      {!isLoading && movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={setSelectedMovie} />
+      {isSuccess && data?.results.length > 0 && (
+        <MovieGrid movies={data.results} onSelect={setSelectedMovie} />
       )}
 
       {selectedMovie && (
@@ -72,7 +65,7 @@ export default function App() {
         />
       )}
 
-      {isSuccess && totalPages > 1 && (
+      {totalPages > 1 && (
         <ReactPaginate
           pageCount={totalPages}
           pageRangeDisplayed={5}
